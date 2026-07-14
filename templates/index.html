@@ -42,7 +42,7 @@
 <div class="wrap">
   <div style="display:flex; justify-content:space-between; align-items:center;">
     <h1>記帳本</h1>
-    <div style="font-size:0.8rem; color:#888;">{{ session_username }}・<a href="{{ url_for('logout') }}" style="color:#888;">登出</a></div>
+    <div style="font-size:0.8rem; color:#888;">{{ session_username }}・<a href="{{ url_for('change_password') }}" style="color:#888;">改密碼</a>・<a href="{{ url_for('logout') }}" style="color:#888;">登出</a></div>
   </div>
 
   <div class="month-nav">

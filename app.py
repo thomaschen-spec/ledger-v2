@@ -152,52 +152,51 @@ def logout():
     return redirect(url_for("login"))
 
 
-@app.route("/admin/reassign-legacy", methods=["POST"])
-def admin_reassign_legacy():
+@app.route("/admin/cleanup-test-users", methods=["POST"])
+def admin_cleanup_test_users():
     if request.form.get("secret") != os.environ.get("SECRET_KEY", "dev-only-insecure-key-change-in-render-env"):
         return "forbidden", 403
-    target_username = request.form.get("target", "").strip()
     with get_conn() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT id FROM users WHERE username = %s", (target_username,))
-            target = cur.fetchone()
-            if not target:
-                return "target user not found", 404
-            target_id = target["id"]
-
-            cur.execute("SELECT id FROM users WHERE username LIKE '\\_\\_test%' ESCAPE '\\'")
-            test_users = [r["id"] for r in cur.fetchall()]
-            if not test_users:
-                return "no test users found", 404
-
-            # 刪掉驗證時新增的假測試帳目，不歸戶
-            cur.execute("DELETE FROM transactions WHERE note = 'TESTMARK_A'")
-
-            # 逐一過戶測試帳號名下的分類；若真帳號已有同名分類（例如剛註冊時的預設分類），
-            # 就把帳目轉去那個既有分類、刪掉重複的測試分類，避免撞到 (name, user_id) 的唯一限制
-            cur.execute("SELECT id, name FROM categories WHERE user_id = ANY(%s)", (test_users,))
-            for cat in cur.fetchall():
-                cur.execute(
-                    "SELECT id FROM categories WHERE user_id = %s AND name = %s",
-                    (target_id, cat["name"]),
-                )
-                existing = cur.fetchone()
-                if existing:
-                    cur.execute(
-                        "UPDATE transactions SET category_id = %s WHERE category_id = %s",
-                        (existing["id"], cat["id"]),
-                    )
-                    cur.execute("DELETE FROM categories WHERE id = %s", (cat["id"],))
-                else:
-                    cur.execute("UPDATE categories SET user_id = %s WHERE id = %s", (target_id, cat["id"]))
-
-            cur.execute(
-                "UPDATE transactions SET user_id = %s WHERE user_id = ANY(%s)",
-                (target_id, test_users),
-            )
-            cur.execute("DELETE FROM users WHERE id = ANY(%s)", (test_users,))
+            cur.execute("DELETE FROM users WHERE username LIKE '\\_\\_test%' ESCAPE '\\'")
+            deleted = cur.rowcount
         conn.commit()
-    return "ok", 200
+    return f"deleted {deleted}", 200
+
+
+@app.route("/change-password", methods=["GET", "POST"])
+@login_required
+def change_password():
+    uid = current_user_id()
+    error = None
+    success = False
+    if request.method == "POST":
+        current_password = request.form.get("current_password", "")
+        new_password = request.form.get("new_password", "")
+        confirm_password = request.form.get("confirm_password", "")
+
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT password_hash FROM users WHERE id = %s", (uid,))
+                user = cur.fetchone()
+
+                if not check_password_hash(user["password_hash"], current_password):
+                    error = "目前的密碼不對"
+                elif not new_password:
+                    error = "新密碼不能空白"
+                elif new_password != confirm_password:
+                    error = "兩次輸入的新密碼不一樣"
+                else:
+                    cur.execute(
+                        "UPDATE users SET password_hash = %s WHERE id = %s",
+                        (generate_password_hash(new_password), uid),
+                    )
+                    conn.commit()
+                    success = True
+
+    return render_template("change_password.html", error=error, success=success)
+
+
 
 
 def parse_month(month_str):
