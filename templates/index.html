@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>記帳本</title>
+<style>
+  body { font-family: -apple-system, "Segoe UI", "Microsoft JhengHei", sans-serif; background: #f5f3ef; margin: 0; padding: 16px; color: #2b2b2b; }
+  .wrap { max-width: 480px; margin: 0 auto; }
+  h1 { font-size: 1.3rem; margin: 0 0 8px; }
+  .total { background: #2b2b2b; color: #f5c977; padding: 16px; border-radius: 12px; text-align: center; margin-bottom: 16px; }
+  .total .num { font-size: 1.8rem; font-weight: bold; }
+  form.add { background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  form.add label { display: block; font-size: 0.85rem; margin-top: 8px; color: #666; }
+  form.add input, form.add select { width: 100%; padding: 8px; margin-top: 4px; border: 1px solid #ddd; border-radius: 6px; font-size: 1rem; box-sizing: border-box; }
+  form.add button { margin-top: 12px; width: 100%; padding: 10px; background: #2b2b2b; color: #f5c977; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer; }
+  ul.list { list-style: none; padding: 0; margin: 0; }
+  li.item { background: #fff; border-radius: 10px; padding: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+  .item .meta { font-size: 0.8rem; color: #888; }
+  .item .amount { font-weight: bold; }
+  .item .amount.neg { color: #c0392b; }
+  .item .amount.pos { color: #27ae60; }
+  .item button.del { background: none; border: none; color: #aaa; font-size: 0.9rem; cursor: pointer; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>記帳本</h1>
+  <div class="total">
+    <div>本月合計</div>
+    <div class="num">{{ "%.0f"|format(month_total) }}</div>
+  </div>
+
+  <form class="add" method="post" action="/add">
+    <label>金額（支出打負數，收入打正數）</label>
+    <input type="number" step="0.01" name="amount" required>
+    <label>分類</label>
+    <select name="category_id">
+      {% for c in categories %}
+      <option value="{{ c.id }}">{{ c.name }}</option>
+      {% endfor %}
+    </select>
+    <label>日期</label>
+    <input type="date" name="txn_date" value="{{ today }}" required>
+    <label>備註</label>
+    <input type="text" name="note" placeholder="選填">
+    <button type="submit">新增一筆</button>
+  </form>
+
+  <ul class="list">
+    {% for r in rows %}
+    <li class="item">
+      <div>
+        <div class="amount {{ 'neg' if r.amount < 0 else 'pos' }}">{{ "%.0f"|format(r.amount) }}</div>
+        <div class="meta">{{ r.txn_date }} · {{ r.category }}{% if r.note %} · {{ r.note }}{% endif %}</div>
+      </div>
+      <form method="post" action="/delete/{{ r.id }}" onsubmit="return confirm('刪除這筆？');">
+        <button class="del" type="submit">刪除</button>
+      </form>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+</body>
+</html>
