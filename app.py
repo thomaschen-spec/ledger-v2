@@ -152,6 +152,54 @@ def logout():
     return redirect(url_for("login"))
 
 
+@app.route("/admin/reassign-legacy", methods=["POST"])
+def admin_reassign_legacy():
+    if request.form.get("secret") != os.environ.get("SECRET_KEY", "dev-only-insecure-key-change-in-render-env"):
+        return "forbidden", 403
+    target_username = request.form.get("target", "").strip()
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT id FROM users WHERE username = %s", (target_username,))
+            target = cur.fetchone()
+            if not target:
+                return "target user not found", 404
+            target_id = target["id"]
+
+            cur.execute("SELECT id FROM users WHERE username LIKE '\\_\\_test%' ESCAPE '\\'")
+            test_users = [r["id"] for r in cur.fetchall()]
+            if not test_users:
+                return "no test users found", 404
+
+            # 刪掉驗證時新增的假測試帳目，不歸戶
+            cur.execute("DELETE FROM transactions WHERE note = 'TESTMARK_A'")
+
+            # 逐一過戶測試帳號名下的分類；若真帳號已有同名分類（例如剛註冊時的預設分類），
+            # 就把帳目轉去那個既有分類、刪掉重複的測試分類，避免撞到 (name, user_id) 的唯一限制
+            cur.execute("SELECT id, name FROM categories WHERE user_id = ANY(%s)", (test_users,))
+            for cat in cur.fetchall():
+                cur.execute(
+                    "SELECT id FROM categories WHERE user_id = %s AND name = %s",
+                    (target_id, cat["name"]),
+                )
+                existing = cur.fetchone()
+                if existing:
+                    cur.execute(
+                        "UPDATE transactions SET category_id = %s WHERE category_id = %s",
+                        (existing["id"], cat["id"]),
+                    )
+                    cur.execute("DELETE FROM categories WHERE id = %s", (cat["id"],))
+                else:
+                    cur.execute("UPDATE categories SET user_id = %s WHERE id = %s", (target_id, cat["id"]))
+
+            cur.execute(
+                "UPDATE transactions SET user_id = %s WHERE user_id = ANY(%s)",
+                (target_id, test_users),
+            )
+            cur.execute("DELETE FROM users WHERE id = ANY(%s)", (test_users,))
+        conn.commit()
+    return "ok", 200
+
+
 def parse_month(month_str):
     if month_str:
         try:
