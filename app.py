@@ -46,7 +46,7 @@ def init_db():
             # 舊資料相容：欄位可能是舊版留下的，補齊 user_id 欄位與唯一限制
             cur.execute("ALTER TABLE categories ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id)")
             cur.execute("ALTER TABLE transactions ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id)")
-            cur.execute("DROP INDEX IF EXISTS categories_name_key")
+            cur.execute("ALTER TABLE categories DROP CONSTRAINT IF EXISTS categories_name_key")
             cur.execute("""
                 DO $$ BEGIN
                     IF NOT EXISTS (
