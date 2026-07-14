@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>記帳本進化版 — 專案介紹</title>
+<style>
+  body { font-family: -apple-system, "Segoe UI", "Microsoft JhengHei", sans-serif; background: #f5f3ef; margin: 0; padding: 24px; color: #2b2b2b; }
+  .wrap { max-width: 640px; margin: 0 auto; }
+  h1 { font-size: 1.6rem; margin-bottom: 4px; }
+  .sub { color: #888; margin-bottom: 24px; }
+  .card { background: #fff; border-radius: 12px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .card h2 { font-size: 1.05rem; margin: 0 0 10px; }
+  .card ul { margin: 0; padding-left: 20px; line-height: 1.7; }
+  .cta { display: inline-block; background: #2b2b2b; color: #f5c977; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; }
+  .stack span { display: inline-block; background: #f5c977; color: #2b2b2b; padding: 4px 10px; border-radius: 6px; font-size: 0.85rem; margin: 2px; }
+  .note { font-size: 0.85rem; color: #888; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>記帳本進化版</h1>
+  <div class="sub">Ledger v2 — 全雲端記帳網頁小專案</div>
+
+  <div class="card">
+    <h2>這是什麼</h2>
+    <p>一個簡單但完整的記帳網頁：記帳、篩選、月份切換、收支統計、圓餅圖。
+    重點不是功能多，是「從無到有上線」的完整流程 —— 程式碼、雲端資料庫、自動部署三者串起來。</p>
+    <a class="cta" href="https://ledger-v2-w07a.onrender.com" target="_blank">打開實際網頁 →</a>
+    <p class="note">第一次點開若休眠中，等約1分鐘即可，不是壞了。</p>
+  </div>
+
+  <div class="card">
+    <h2>技術組合</h2>
+    <div class="stack">
+      <span>Flask</span><span>Neon (Postgres)</span><span>Render</span><span>GitHub</span>
+    </div>
+    <ul style="margin-top:12px;">
+      <li>資料庫：Neon 雲端 Postgres（免費層，5分鐘閒置自動休息，喚醒快）</li>
+      <li>部署：Render 常駐後端（免費層，15分鐘無流量休眠，喚醒約1分鐘）</li>
+      <li>更新流程：改程式碼 → commit/push GitHub → Render 自動重新部署</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>目前功能</h2>
+    <ul>
+      <li>新增／修改／刪除一筆帳</li>
+      <li>依分類篩選、手動新增分類</li>
+      <li>月份切換看歷史紀錄</li>
+      <li>收入／支出／淨額分開顯示</li>
+      <li>分類支出圓餅圖（隨資料即時變化）</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>原始碼</h2>
+    <p><a href="https://github.com/thomaschen-spec/ledger-v2">github.com/thomaschen-spec/ledger-v2</a></p>
+  </div>
+</div>
+</body>
+</html>
