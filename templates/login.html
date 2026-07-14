@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ '註冊' if mode == 'register' else '登入' }} — 記帳本</title>
+<style>
+  body { font-family: -apple-system, "Segoe UI", "Microsoft JhengHei", sans-serif; background: #f5f3ef; margin: 0; padding: 16px; color: #2b2b2b; display: flex; align-items: center; justify-content: center; min-height: 100vh; box-sizing: border-box; }
+  .card { background: #fff; border-radius: 12px; padding: 24px; max-width: 360px; width: 100%; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  h1 { font-size: 1.3rem; margin: 0 0 16px; }
+  label { display: block; font-size: 0.85rem; margin-top: 12px; color: #666; }
+  input { width: 100%; padding: 10px; margin-top: 4px; border: 1px solid #ddd; border-radius: 6px; font-size: 1rem; box-sizing: border-box; }
+  button { margin-top: 20px; width: 100%; padding: 10px; background: #2b2b2b; color: #f5c977; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer; }
+  .error { color: #c0392b; font-size: 0.85rem; margin-top: 12px; }
+  .switch { text-align: center; margin-top: 16px; font-size: 0.85rem; }
+  .switch a { color: #2b2b2b; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>{{ '註冊新帳號' if mode == 'register' else '登入記帳本' }}</h1>
+  <form method="post">
+    <label>帳號</label>
+    <input type="text" name="username" value="{{ username }}" required autofocus>
+    <label>密碼</label>
+    <input type="password" name="password" required>
+    <button type="submit">{{ '註冊' if mode == 'register' else '登入' }}</button>
+  </form>
+  {% if error %}<div class="error">{{ error }}</div>{% endif %}
+  <div class="switch">
+    {% if mode == 'register' %}
+      已經有帳號？<a href="{{ url_for('login') }}">登入</a>
+    {% else %}
+      還沒有帳號？<a href="{{ url_for('register') }}">註冊</a>
+    {% endif %}
+  </div>
+</div>
+</body>
+</html>

@@ -40,7 +40,10 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>記帳本</h1>
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <h1>記帳本</h1>
+    <div style="font-size:0.8rem; color:#888;">{{ session_username }}・<a href="{{ url_for('logout') }}" style="color:#888;">登出</a></div>
+  </div>
 
   <div class="month-nav">
     <a href="{{ url_for('index', month=prev_month, category_id=selected_category_id) }}">‹</a>
