@@ -152,18 +152,6 @@ def logout():
     return redirect(url_for("login"))
 
 
-@app.route("/admin/cleanup-test-users", methods=["POST"])
-def admin_cleanup_test_users():
-    if request.form.get("secret") != os.environ.get("SECRET_KEY", "dev-only-insecure-key-change-in-render-env"):
-        return "forbidden", 403
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute("DELETE FROM users WHERE username LIKE '\\_\\_test%' ESCAPE '\\'")
-            deleted = cur.rowcount
-        conn.commit()
-    return f"deleted {deleted}", 200
-
-
 @app.route("/change-password", methods=["GET", "POST"])
 @login_required
 def change_password():
