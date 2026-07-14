@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>修改一筆帳</title>
+<style>
+  body { font-family: -apple-system, "Segoe UI", "Microsoft JhengHei", sans-serif; background: #f5f3ef; margin: 0; padding: 16px; color: #2b2b2b; }
+  .wrap { max-width: 480px; margin: 0 auto; }
+  h1 { font-size: 1.3rem; margin: 0 0 16px; }
+  form { background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  label { display: block; font-size: 0.85rem; margin-top: 8px; color: #666; }
+  input, select { width: 100%; padding: 10px; margin-top: 4px; border: 1px solid #ddd; border-radius: 6px; font-size: 1rem; box-sizing: border-box; min-height: 40px; }
+  button { margin-top: 12px; width: 100%; padding: 10px; background: #2b2b2b; color: #f5c977; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer; }
+  a.back { display: inline-block; margin-top: 12px; color: #666; text-decoration: none; font-size: 0.9rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>修改一筆帳</h1>
+  <form method="post" action="/edit/{{ txn.id }}">
+    <label>金額（支出打負數，收入打正數）</label>
+    <input type="number" step="0.01" name="amount" value="{{ txn.amount }}" required>
+    <label>分類</label>
+    <select name="category_id">
+      {% for c in categories %}
+      <option value="{{ c.id }}" {% if c.id == txn.category_id %}selected{% endif %}>{{ c.name }}</option>
+      {% endfor %}
+    </select>
+    <label>日期</label>
+    <input type="date" name="txn_date" value="{{ txn.txn_date }}" required>
+    <label>備註</label>
+    <input type="text" name="note" value="{{ txn.note or '' }}" placeholder="選填">
+    <button type="submit">儲存</button>
+  </form>
+  <a class="back" href="/">← 回列表</a>
+</div>
+</body>
+</html>
