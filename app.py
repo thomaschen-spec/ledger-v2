@@ -66,6 +66,55 @@ def init_db():
         conn.commit()
 
 
+DEMO_USERNAME = "__demo__"
+DEMO_SEED_CATEGORIES = ("餐飲", "交通", "購物", "娛樂", "其他")
+
+
+def get_demo_uid(cur):
+    cur.execute("SELECT id FROM users WHERE username = %s", (DEMO_USERNAME,))
+    row = cur.fetchone()
+    return row["id"] if row else None
+
+
+def ensure_demo_user():
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            uid = get_demo_uid(cur)
+            if uid is None:
+                cur.execute(
+                    "INSERT INTO users (username, password_hash) VALUES (%s, %s) RETURNING id",
+                    (DEMO_USERNAME, generate_password_hash(os.urandom(16).hex())),
+                )
+                uid = cur.fetchone()["id"]
+            conn.commit()
+    reset_demo_data(uid)
+    return uid
+
+
+def reset_demo_data(uid):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM transactions WHERE user_id = %s", (uid,))
+            cur.execute("DELETE FROM categories WHERE user_id = %s", (uid,))
+            cur.executemany(
+                "INSERT INTO categories (name, user_id) VALUES (%s, %s)",
+                [(n, uid) for n in DEMO_SEED_CATEGORIES],
+            )
+            cur.execute("SELECT id, name FROM categories WHERE user_id = %s", (uid,))
+            cats = {r["name"]: r["id"] for r in cur.fetchall()}
+            today = date.today().isoformat()
+            sample = [
+                (cats["餐飲"], -120, today, "示範：午餐"),
+                (cats["交通"], -30, today, "示範：捷運"),
+                (cats["其他"], 30000, today, "示範：薪水"),
+            ]
+            cur.executemany(
+                "INSERT INTO transactions (category_id, amount, txn_date, note, user_id) VALUES (%s, %s, %s, %s, %s)",
+                [(cid, amt, d, note, uid) for cid, amt, d, note in sample],
+            )
+        conn.commit()
+
+
 def current_user_id():
     return session.get("user_id")
 
@@ -205,10 +254,7 @@ def shift_month(year, month, delta):
     return y, m
 
 
-@app.route("/")
-@login_required
-def index():
-    uid = current_user_id()
+def render_ledger(uid, url_prefix, demo=False):
     year, month = parse_month(request.args.get("month"))
     month_str = f"{year:04d}-{month:02d}"
     category_id = request.args.get("category_id", type=int)
@@ -280,13 +326,12 @@ def index():
         chart_labels=chart_labels,
         chart_values=chart_values,
         session_username=session.get("username"),
+        url_prefix=url_prefix,
+        demo=demo,
     )
 
 
-@app.route("/add", methods=["POST"])
-@login_required
-def add():
-    uid = current_user_id()
+def add_transaction(uid, redirect_to):
     amount = float(request.form["amount"])
     category_id = int(request.form["category_id"])
     txn_date = request.form["txn_date"]
@@ -296,20 +341,17 @@ def add():
         with conn.cursor() as cur:
             cur.execute("SELECT id FROM categories WHERE id = %s AND user_id = %s", (category_id, uid))
             if not cur.fetchone():
-                return redirect(url_for("index"))
+                return redirect(redirect_to)
             cur.execute(
                 "INSERT INTO transactions (category_id, amount, txn_date, note, user_id) VALUES (%s, %s, %s, %s, %s)",
                 (category_id, amount, txn_date, note, uid),
             )
         conn.commit()
 
-    return redirect(url_for("index"))
+    return redirect(redirect_to)
 
 
-@app.route("/edit/<int:txn_id>", methods=["GET", "POST"])
-@login_required
-def edit(txn_id):
-    uid = current_user_id()
+def edit_transaction(uid, txn_id, url_prefix, redirect_to):
     if request.method == "POST":
         amount = float(request.form["amount"])
         category_id = int(request.form["category_id"])
@@ -319,13 +361,13 @@ def edit(txn_id):
             with conn.cursor() as cur:
                 cur.execute("SELECT id FROM categories WHERE id = %s AND user_id = %s", (category_id, uid))
                 if not cur.fetchone():
-                    return redirect(url_for("index"))
+                    return redirect(redirect_to)
                 cur.execute(
                     "UPDATE transactions SET amount=%s, category_id=%s, txn_date=%s, note=%s WHERE id=%s AND user_id=%s",
                     (amount, category_id, txn_date, note, txn_id, uid),
                 )
             conn.commit()
-        return redirect(url_for("index"))
+        return redirect(redirect_to)
 
     with get_conn() as conn:
         with conn.cursor() as cur:
@@ -335,29 +377,23 @@ def edit(txn_id):
             )
             txn = cur.fetchone()
             if not txn:
-                return redirect(url_for("index"))
+                return redirect(redirect_to)
             cur.execute("SELECT id, name FROM categories WHERE user_id = %s ORDER BY id", (uid,))
             categories = cur.fetchall()
 
-    return render_template("edit.html", txn=txn, categories=categories)
+    return render_template("edit.html", txn=txn, categories=categories, url_prefix=url_prefix)
 
 
-@app.route("/delete/<int:txn_id>", methods=["POST"])
-@login_required
-def delete(txn_id):
-    uid = current_user_id()
+def delete_transaction(uid, txn_id, redirect_to):
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("DELETE FROM transactions WHERE id = %s AND user_id = %s", (txn_id, uid))
         conn.commit()
 
-    return redirect(url_for("index"))
+    return redirect(redirect_to)
 
 
-@app.route("/categories/add", methods=["POST"])
-@login_required
-def add_category():
-    uid = current_user_id()
+def add_category_for(uid, redirect_to):
     name = request.form.get("name", "").strip()
     if name:
         with get_conn() as conn:
@@ -368,10 +404,87 @@ def add_category():
                 )
             conn.commit()
 
-    return redirect(url_for("index"))
+    return redirect(redirect_to)
+
+
+@app.route("/")
+@login_required
+def index():
+    return render_ledger(current_user_id(), url_prefix="")
+
+
+@app.route("/add", methods=["POST"])
+@login_required
+def add():
+    return add_transaction(current_user_id(), url_for("index"))
+
+
+@app.route("/edit/<int:txn_id>", methods=["GET", "POST"])
+@login_required
+def edit(txn_id):
+    return edit_transaction(current_user_id(), txn_id, url_prefix="", redirect_to=url_for("index"))
+
+
+@app.route("/delete/<int:txn_id>", methods=["POST"])
+@login_required
+def delete(txn_id):
+    return delete_transaction(current_user_id(), txn_id, url_for("index"))
+
+
+@app.route("/categories/add", methods=["POST"])
+@login_required
+def add_category():
+    return add_category_for(current_user_id(), url_for("index"))
+
+
+@app.route("/demo")
+def demo_index():
+    return render_ledger(ensure_demo_uid(), url_prefix="/demo", demo=True)
+
+
+@app.route("/demo/add", methods=["POST"])
+def demo_add():
+    return add_transaction(ensure_demo_uid(), "/demo")
+
+
+@app.route("/demo/edit/<int:txn_id>", methods=["GET", "POST"])
+def demo_edit(txn_id):
+    return edit_transaction(ensure_demo_uid(), txn_id, url_prefix="/demo", redirect_to="/demo")
+
+
+@app.route("/demo/delete/<int:txn_id>", methods=["POST"])
+def demo_delete(txn_id):
+    return delete_transaction(ensure_demo_uid(), txn_id, "/demo")
+
+
+@app.route("/demo/categories/add", methods=["POST"])
+def demo_add_category():
+    return add_category_for(ensure_demo_uid(), "/demo")
+
+
+@app.route("/demo/reset", methods=["POST"])
+def demo_reset():
+    reset_demo_data(ensure_demo_uid())
+    return redirect("/demo")
+
+
+_DEMO_UID = None
+
+
+def ensure_demo_uid():
+    global _DEMO_UID
+    if _DEMO_UID is None:
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+                uid = get_demo_uid(cur)
+        if uid is None:
+            uid = ensure_demo_user()
+        _DEMO_UID = uid
+    return _DEMO_UID
 
 
 init_db()
+ensure_demo_uid()
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)

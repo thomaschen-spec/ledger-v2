@@ -18,7 +18,7 @@
 <body>
 <div class="wrap">
   <h1>修改一筆帳</h1>
-  <form method="post" action="/edit/{{ txn.id }}">
+  <form method="post" action="{{ url_prefix }}/edit/{{ txn.id }}">
     <label>金額（支出打負數，收入打正數）</label>
     <input type="number" step="0.01" name="amount" value="{{ txn.amount }}" required>
     <label>分類</label>
@@ -33,7 +33,7 @@
     <input type="text" name="note" value="{{ txn.note or '' }}" placeholder="選填">
     <button type="submit">儲存</button>
   </form>
-  <a class="back" href="/">← 回列表</a>
+  <a class="back" href="{{ url_prefix }}/">← 回列表</a>
 </div>
 </body>
 </html>

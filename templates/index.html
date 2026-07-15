@@ -41,14 +41,28 @@
 <body>
 <div class="wrap">
   <div style="display:flex; justify-content:space-between; align-items:center;">
-    <h1>記帳本</h1>
+    <h1>記帳本{% if demo %}（示範版）{% endif %}</h1>
+    {% if demo %}
+    <div style="font-size:0.8rem; color:#888;">
+      <form method="post" action="{{ url_prefix }}/reset" onsubmit="return confirm('重置示範資料？');" style="display:inline;">
+        <button type="submit" style="background:none;border:none;color:#888;font-size:0.8rem;cursor:pointer;padding:0;">重置示範資料</button>
+      </form>
+      ・<a href="/login" style="color:#888;">登入正式帳號</a>
+    </div>
+    {% else %}
     <div style="font-size:0.8rem; color:#888;">{{ session_username }}・<a href="{{ url_for('change_password') }}" style="color:#888;">改密碼</a>・<a href="{{ url_for('logout') }}" style="color:#888;">登出</a></div>
+    {% endif %}
   </div>
+  {% if demo %}
+  <div style="background:#fff3cd; color:#856404; padding:8px 12px; border-radius:8px; font-size:0.8rem; margin-bottom:12px;">
+    這是公開示範版，資料任何人都能改，不影響妳的正式帳號。想留下真的記帳資料請登入或註冊。
+  </div>
+  {% endif %}
 
   <div class="month-nav">
-    <a href="{{ url_for('index', month=prev_month, category_id=selected_category_id) }}">‹</a>
+    <a href="{{ url_prefix }}/?month={{ prev_month }}{% if selected_category_id %}&category_id={{ selected_category_id }}{% endif %}">‹</a>
     <div class="label">{{ month_str }}</div>
-    <a href="{{ url_for('index', month=next_month, category_id=selected_category_id) }}">›</a>
+    <a href="{{ url_prefix }}/?month={{ next_month }}{% if selected_category_id %}&category_id={{ selected_category_id }}{% endif %}">›</a>
   </div>
 
   <div class="totals">
@@ -63,7 +77,7 @@
   </div>
   {% endif %}
 
-  <form class="filter-bar" method="get" action="/">
+  <form class="filter-bar" method="get" action="{{ url_prefix }}/">
     <input type="hidden" name="month" value="{{ month_str }}">
     <select name="category_id" onchange="this.form.submit()">
       <option value="">全部分類</option>
@@ -73,7 +87,7 @@
     </select>
   </form>
 
-  <form class="add" method="post" action="/add">
+  <form class="add" method="post" action="{{ url_prefix }}/add">
     <label>金額（支出打負數，收入打正數）</label>
     <input type="number" step="0.01" name="amount" required>
     <label>分類</label>
@@ -91,7 +105,7 @@
 
   <details class="addcat-toggle">
     <summary>+ 新增分類</summary>
-    <form class="addcat" method="post" action="/categories/add">
+    <form class="addcat" method="post" action="{{ url_prefix }}/categories/add">
       <label>分類名稱</label>
       <input type="text" name="name" placeholder="例如：醫療" required>
       <button type="submit">新增分類</button>
@@ -106,8 +120,8 @@
         <div class="meta">{{ r.txn_date }} · {{ r.category }}{% if r.note %} · {{ r.note }}{% endif %}</div>
       </div>
       <div class="actions">
-        <a href="{{ url_for('edit', txn_id=r.id) }}">改</a>
-        <form method="post" action="/delete/{{ r.id }}" onsubmit="return confirm('刪除這筆？');">
+        <a href="{{ url_prefix }}/edit/{{ r.id }}">改</a>
+        <form method="post" action="{{ url_prefix }}/delete/{{ r.id }}" onsubmit="return confirm('刪除這筆？');">
           <button type="submit">刪</button>
         </form>
       </div>
