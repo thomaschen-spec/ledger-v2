@@ -15,6 +15,11 @@
   .cta { display: inline-block; background: #2b2b2b; color: #f5c977; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; }
   .stack span { display: inline-block; background: #f5c977; color: #2b2b2b; padding: 4px 10px; border-radius: 6px; font-size: 0.85rem; margin: 2px; }
   .note { font-size: 0.85rem; color: #888; margin-top: 8px; }
+  .cta.loading { opacity: 0.7; cursor: wait; }
+  .spinner { display: none; align-items: center; gap: 8px; margin-top: 12px; font-size: 0.9rem; color: #666; }
+  .spinner.show { display: flex; }
+  .spinner .dot { width: 10px; height: 10px; border-radius: 50%; background: #f5c977; animation: pulse 1s infinite ease-in-out; }
+  @keyframes pulse { 0%, 100% { transform: scale(0.6); opacity: 0.5; } 50% { transform: scale(1); opacity: 1; } }
 </style>
 </head>
 <body>
@@ -26,8 +31,9 @@
     <h2>這是什麼</h2>
     <p>一個簡單但完整的記帳網頁：記帳、篩選、月份切換、收支統計、圓餅圖。
     重點不是功能多，是「從無到有上線」的完整流程 —— 程式碼、雲端資料庫、自動部署三者串起來。</p>
-    <a class="cta" href="https://ledger-v2-w07a.onrender.com" target="_blank">打開實際網頁 →</a>
-    <p class="note">第一次點開若休眠中，等約1分鐘即可，不是壞了。</p>
+    <a class="cta" id="ctaBtn" href="https://ledger-v2-w07a.onrender.com" target="_blank">打開實際網頁 →</a>
+    <div class="spinner" id="spinner"><span class="dot"></span> 網站剛才在休息，正在叫醒它（通常不到1分鐘）…</div>
+    <p class="note">第一次點開若休眠中，網站會自動顯示「叫醒中」，不用重新整理。</p>
   </div>
 
   <div class="card">
@@ -58,5 +64,24 @@
     <p><a href="https://github.com/thomaschen-spec/ledger-v2">github.com/thomaschen-spec/ledger-v2</a></p>
   </div>
 </div>
+<script>
+  var APP_URL = "https://ledger-v2-w07a.onrender.com";
+  var ctaBtn = document.getElementById("ctaBtn");
+  var spinner = document.getElementById("spinner");
+  ctaBtn.addEventListener("click", function (e) {
+    e.preventDefault();
+    ctaBtn.classList.add("loading");
+    ctaBtn.textContent = "叫醒中…";
+    spinner.classList.add("show");
+    fetch(APP_URL, { mode: "no-cors" })
+      .catch(function () {})
+      .finally(function () {
+        window.open(APP_URL, "_blank");
+        ctaBtn.classList.remove("loading");
+        ctaBtn.textContent = "打開實際網頁 →";
+        spinner.classList.remove("show");
+      });
+  });
+</script>
 </body>
 </html>
